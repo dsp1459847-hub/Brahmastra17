@@ -6,12 +6,11 @@ from collections import Counter
 import warnings
 warnings.filterwarnings('ignore')
 
-st.set_page_config(page_title="MAYA AI - The Ultimate Engine", layout="wide")
+st.set_page_config(page_title="MAYA AI - Tier Linker Engine", layout="wide")
 
-st.title("MAYA AI 🦅: The Ultimate All-in-One Engine ⚡")
-st.markdown("Aapke saare Master Rules Active hain: **1. Pattern Accuracy (0/1 Fail) | 2. Timeframe Linker (Cross-Shift) | 3. Black Box (Kaale Dhabbe) | 4. NAYA TIER LINKER!**")
+st.title("MAYA AI 🦅: Tier Linker Master Engine ⚡")
+st.markdown("Aapka Ultimate Rule Active: **Cross-Shift Tier Linking (Markov Chain)!** Agar pichli shift mein 'High' aaya hai, toh history check hogi ki agli shift mein kya aane ke sabse zyada chance hain!")
 
-# --- RESULT MEMORY (DIARY) ---
 if 'results_cache' not in st.session_state:
     st.session_state.results_cache = {}
 
@@ -47,7 +46,6 @@ if uploaded_file is not None:
         target_date_next = selected_end_date + timedelta(days=1)
         st.info(f"📅 **Data Read Up To:** {selected_end_date.strftime('%d %B %Y')} | 🎯 **Target Date:** {target_date_next.strftime('%A, %d %B %Y')}")
 
-        # 1. CORE FUNCTIONS
         @st.cache_data
         def get_all_tiers_cached(past_tuple):
             scores = {n: 0 for n in range(100)}
@@ -63,7 +61,6 @@ if uploaded_file is not None:
             elif num in tiers_dict['L']: return 'L'
             return 'FAIL'
 
-        # 2. BLACK BOX DETECTOR
         @st.cache_data
         def get_doomed_timeframe_predictions(history_tuple):
             h_list = list(history_tuple)
@@ -108,7 +105,7 @@ if uploaded_file is not None:
                         black_traps.update(doomed_preds)
             return list(black_traps)
 
-        # 3. UNIFIED TIMEFRAME & CROSS-SHIFT LINKER
+        # 🚀 THE SEQUENTIAL TIMEFRAME LINKER
         def get_unified_best_timeframe(history_tuple, dates_tuple, prev_shift_decisions):
             h_list = list(history_tuple)
             d_list = list(dates_tuple)
@@ -119,6 +116,7 @@ if uploaded_file is not None:
             for tf in range(1, 46):
                 hit_history = []
                 hit_dates = [] 
+                
                 for i in range(15, len(h_list)):
                     pat = h_list[:i][-tf:]
                     nxt = [h_list[:i][k+tf] for k in range(len(h_list[:i])-tf) if h_list[:i][k:k+tf] == pat]
@@ -159,7 +157,6 @@ if uploaded_file is not None:
 
                 base_accuracy = (pattern_successes / pattern_matches * 100) if pattern_matches > 0 else 0
                 
-                # Cross-Shift Correlation (Linker 1)
                 cross_shift_msgs = []
                 if prev_shift_decisions:
                     for prev_dec in prev_shift_decisions:
@@ -178,7 +175,6 @@ if uploaded_file is not None:
                             cross_shift_msgs.append(msg)
                             
                 final_cross_msg = " | ".join(cross_shift_msgs) if cross_shift_msgs else ""
-                
                 jan_apr = sum(1 for i in range(1, len(hit_history)) if hit_history[i] and hit_history[i-1] and (1 <= d_list[i+15].month <= 4))
                 max_f = 0
                 c_f = 0
@@ -210,10 +206,10 @@ if uploaded_file is not None:
                 
             return 15, "DEFAULT FALLBACK", 0, 0, 99, 0, 0, 0, [], ""
 
-        # 4. NAYA TIER LINKER (Cross-Shift Probability)
+        # 🧠 AAPKA NAYA TIER LINKER (Markov Chain History)
         def calculate_tier_link(curr_shift, prev_shift, prev_tier_actual):
             transitions = {'H': 0, 'M': 0, 'L': 0}
-            temp_df = filtered_df.dropna(subset=[curr_shift, prev_shift]).tail(50) 
+            temp_df = filtered_df.dropna(subset=[curr_shift, prev_shift]).tail(50) # Pichle 50 din ka matrix
             
             for idx, row in temp_df.iterrows():
                 p_hist = filtered_df.loc[:idx-1, prev_shift].dropna().astype(int).tolist()
@@ -227,6 +223,7 @@ if uploaded_file is not None:
                 p_act_tier = get_tier_name(row[prev_shift], p_tiers)
                 c_act_tier = get_tier_name(row[curr_shift], c_tiers)
                 
+                # Agar us din Pichli shift aapke diye gaye tier ki thi, toh current shift mein kya aaya?
                 if p_act_tier == prev_tier_actual and c_act_tier in transitions:
                     transitions[c_act_tier] += 1
                     
@@ -237,7 +234,6 @@ if uploaded_file is not None:
                 return best_t, prob
             return None, 0
 
-        # UI Visuals
         def render_ank(nums, traps, black_boxes):
             nums = list(set(nums)); nums.sort()
             html = "<div style='display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px;'>"
@@ -253,7 +249,7 @@ if uploaded_file is not None:
             html += "</div>"
             return html
 
-        # --- PROCESS ALL SHIFTS SEQUENTIALLY ---
+        # --- PROCESS IN CHRONOLOGICAL ORDER ---
         prev_shift_decisions = []
         last_processed_shift = None
         last_shift_tier = None
@@ -264,23 +260,23 @@ if uploaded_file is not None:
             st.markdown("---")
             
             if shift not in st.session_state.results_cache:
-                with st.spinner(f"Searching {shift}... Sabhi purane aur naye rules apply ho rahe hain!"):
+                with st.spinner(f"Searching {shift}... Cross-Shift Tier Linking Matrix Active!"):
                     s_data = filtered_df[['DATE', shift]].dropna()
                     hist = s_data[shift].astype(int).tolist()
                     d_list = s_data['DATE'].tolist()
                     
                     if len(hist) < 60: continue
                     
-                    # 1. TIMEFRAME LINKER (Cross-Shift Overlap check) + PATTERN HISTORY
+                    # 1. Timeframe Calculation
                     res_vals = get_unified_best_timeframe(tuple(hist), tuple(d_list), prev_shift_decisions)
                     tf_final = res_vals[0]
                     
-                    # Base Predicted Tier
+                    # 2. Base Tier Calculation
                     tiers = get_all_tiers_cached(tuple(hist))
                     nxt = [hist[i+tf_final] for i in range(len(hist)-tf_final) if hist[i:i+tf_final] == hist[-tf_final:]]
                     base_tier = get_tier_name(Counter(nxt).most_common(1)[0][0], tiers) if nxt else 'H'
                     
-                    # 2. TIER LINKER (Cross-Shift Probability)
+                    # 3. 🧠 TIER LINKER (Cross Shift Probability)
                     final_tier = base_tier
                     tier_msg = f"Default predicted tier '{base_tier}' selected."
                     
@@ -288,9 +284,9 @@ if uploaded_file is not None:
                         linked_tier, linked_prob = calculate_tier_link(shift, last_processed_shift, last_shift_tier)
                         if linked_tier:
                             final_tier = linked_tier
-                            tier_msg = f"<b>{last_processed_shift}</b> mein <b>'{last_shift_tier}'</b> aane ke baad, <b>{shift}</b> mein <b>'{linked_tier}'</b> aane ki Probability <b>{linked_prob:.0f}%</b> hai!"
+                            tier_msg = f"<b>{last_processed_shift}</b> mein <b>'{last_shift_tier}'</b> aane ke baad, <b>{shift}</b> mein <b>'{linked_tier}'</b> aane ki Probability <b>{linked_prob:.0f}%</b> hai! Isliye '{linked_tier}' Tier uthaya gaya."
                     
-                    # 3. TRAPS & BLACK BOXES
+                    # 4. Traps & Black Boxes
                     last_n = hist[-1]
                     prev_n = hist[-2]
                     traps = set([(last_n+1)%100, (last_n-1)%100, int(str(last_n).zfill(2)[::-1]), (last_n + (last_n - prev_n))%100])
@@ -312,14 +308,13 @@ if uploaded_file is not None:
 
             res = st.session_state.results_cache[shift]
             
-            # Agli shift ke link ke liye variable update karo
+            # Update variables for the NEXT shift
             prev_shift_decisions.append({
                 'shift': shift, 'tf': res['tf'], 'hit_dates': res['hit_dates']
             })
             last_processed_shift = shift
             last_shift_tier = res['tier']
             
-            # Date Formatting
             dates_today = filtered_df[filtered_df[shift].notna()]['DATE'].tolist()
             date_kal = dates_today[-1].strftime('%d %b %Y') if len(dates_today) > 0 else ""
             date_parso = dates_today[-2].strftime('%d %b %Y') if len(dates_today) > 1 else ""
@@ -357,9 +352,11 @@ if uploaded_file is not None:
                 bg_col = "#00FF7F15"
                 st.markdown(f"<div style='border:2px solid {border_col}; padding:10px; border-radius:8px; background:{bg_col}; font-size:14px;'>"
                             f"<b>Logic:</b> {res['logic']} | <b>Selected Gear:</b> <code>{res['tf']}-Din TF</code><br>"
-                            f"<i>🔗 <b>Cross-Shift Timeframe Links:</b> {res['cross_msg'] if res['cross_msg'] else 'Fresh Sequence (Independent)'}</i><br>"
+                            f"<i>🔗 <b>Cross-Shift Links:</b> {res['cross_msg'] if res['cross_msg'] else 'Fresh Sequence (Independent)'}</i><br>"
                             f"<i>🔥 <b>MIN MAX-FAIL:</b> History ka sabse lamba fail <b>{res['max_f']} din</b> gaya hai!</i><br>"
                             f"<hr style='margin:5px 0; border-top:1px solid #444;'>"
                             f"🏆 <b>TIER LINKER:</b> {res['tier_linker_msg']}<br>"
                             f"✅ <b>HARA (Play):</b> {len(res['pure_green'])} Nums | ⬛ <b>KAALA (Doomed):</b> {len([n for n in res['raw_tier_nums'] if n in res['black_boxes']])} Nums"
- 
+                            f"</div>", unsafe_allow_html=True)
+
+      
