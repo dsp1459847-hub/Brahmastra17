@@ -6,11 +6,12 @@ from collections import Counter
 import warnings
 warnings.filterwarnings('ignore')
 
-st.set_page_config(page_title="MAYA AI - Chronological Shift Linker", layout="wide")
+st.set_page_config(page_title="MAYA AI - True Sequence & Black Box", layout="wide")
 
-st.title("MAYA AI 🦅: Sequential Shift Linker ⚡")
-st.markdown("Aapka Samay-Chakra Rule Active: **DB ➡️ SG ➡️ FD ➡️ GD ➡️ GL ➡️ DS!** Har aage aane wali shift apne se pehle aayi hui SAARI shifts ka data cross-check karke hi apna pattern decide karegi!")
+st.title("MAYA AI 🦅: True Sequence & Zero-Fail Priority ⚡")
+st.markdown("Aapki strict conditions lagoo hain: **1. ZERO-FAIL (Kal Pass) = Rank 1 Priority! 2. TRUE SEQUENCE (Kam se kam 3-4 baar repeat hona zaroori hai). 3. Black Box (Kaale dhabbe) safe hain!**")
 
+# --- RESULT MEMORY ---
 if 'results_cache' not in st.session_state:
     st.session_state.results_cache = {}
 
@@ -25,8 +26,7 @@ if st.sidebar.button("Clear Memory & Re-Run"):
     reset_memory()
     st.rerun()
 
-# AAPKA CHRONOLOGICAL ORDER (Timeline ke hisaab se)
-shift_order = ["DB", "SG", "FD", "GD", "ZA", "GL", "DS"] 
+shift_order = ["DB", "SG", "FD", "GD", "ZA", "GL", "DS"]
 
 @st.cache_data
 def load_data(file_val):
@@ -61,6 +61,22 @@ if uploaded_file is not None:
             elif num in tiers_dict['M']: return 'M'
             elif num in tiers_dict['L']: return 'L'
             return 'FAIL'
+
+        @st.cache_data
+        def detect_player_load_trap(history_tuple):
+            history_list = list(history_tuple)
+            player_traps = []
+            if len(history_list) < 2: return player_traps
+            last_num = history_list[-1]
+            prev_num = history_list[-2]
+            player_traps.append((last_num + 1) % 100)
+            player_traps.append((last_num - 1) % 100)
+            player_traps.append(int(str(last_num).zfill(2)[::-1]))
+            gap = last_num - prev_num
+            player_traps.append((last_num + gap) % 100)
+            for num, count in Counter(history_list[-5:]).items():
+                if count >= 2: player_traps.append(num)
+            return list(set(player_traps))
 
         @st.cache_data
         def get_doomed_timeframe_predictions(history_tuple):
@@ -106,85 +122,60 @@ if uploaded_file is not None:
                         black_traps.update(doomed_preds)
             return list(black_traps)
 
-        # ==========================================
-        # 🚀 THE SEQUENTIAL LINKER
-        # ==========================================
-        def get_unified_best_timeframe(history_tuple, dates_tuple, prev_shift_decisions):
+        @st.cache_data
+        def get_unified_best_timeframe(history_tuple, dates_tuple):
             h_list = list(history_tuple)
             d_list = list(dates_tuple)
-            
-            zero_fail_candidates = []
-            one_fail_candidates = []
-            other_candidates = []
+            candidates = []
             
             for tf in range(1, 46):
                 hit_history = []
-                hit_dates = [] 
-                
                 for i in range(15, len(h_list)):
                     pat = h_list[:i][-tf:]
                     nxt = [h_list[:i][k+tf] for k in range(len(h_list[:i])-tf) if h_list[:i][k:k+tf] == pat]
-                    if not nxt: 
-                        hit_history.append(False)
+                    if not nxt: hit_history.append(False)
                     else:
                         top = Counter(nxt).most_common(1)[0][0]
                         td = get_all_tiers_cached(tuple(h_list[:i]))
-                        is_hit = (get_tier_name(top, td) == get_tier_name(h_list[i], td))
-                        hit_history.append(is_hit)
-                        if is_hit:
-                            hit_dates.append(d_list[i])
+                        hit_history.append(get_tier_name(top, td) == get_tier_name(h_list[i], td))
                 
                 if not hit_history: continue
                 
-                curr_f = 0
-                for k in range(len(hit_history)-1, -1, -1):
-                    if hit_history[k] == False: curr_f += 1
-                    else: break
+                is_zero_fail = False
+                is_true_seq = False
+                logic_name = ""
                 
-                pattern_matches = 0
-                pattern_successes = 0
-                for i in range(1, len(hit_history)-1):
-                    if curr_f == 0:
-                        if hit_history[i] == True:
-                            pattern_matches += 1
-                            if hit_history[i+1] == True: pattern_successes += 1
-                    else:
-                        if i >= curr_f:
-                            is_exact_streak = True
-                            for j in range(curr_f):
-                                if hit_history[i-j] != False:
-                                    is_exact_streak = False
-                                    break
-                            if is_exact_streak:
-                                if (i - curr_f < 0) or hit_history[i - curr_f] == True:
-                                    pattern_matches += 1
-                                    if hit_history[i+1] == True: pattern_successes += 1
-
-                base_accuracy = (pattern_successes / pattern_matches * 100) if pattern_matches > 0 else 0
-                
-                # 🔗 CHAIN LINK CHECK (Har pichli shift se mukabla)
-                cross_shift_msgs = []
-                if prev_shift_decisions:
-                    for prev_dec in prev_shift_decisions:
-                        prev_hit_dates = prev_dec['hit_dates']
-                        if not prev_hit_dates: continue
-                        
-                        common_hits = len(set(hit_dates) & set(prev_hit_dates))
-                        prev_total = len(prev_hit_dates)
-                        joint_prob = (common_hits / prev_total) if prev_total > 0 else 1.0
-                        
-                        # Agar current TF pichli kisi bhi shift ke TF se match ho raha hai toh uski history check karo
-                        if tf == prev_dec['tf']:
-                            msg = f"{prev_dec['shift']} Overlap: {joint_prob*100:.0f}%"
-                            if joint_prob < 0.5: # 50% se kam sath paas hue hain, matab COLLISION hai
-                                base_accuracy = base_accuracy * joint_prob
-                                msg += " ⚠️ Penalized!"
-                            cross_shift_msgs.append(msg)
+                if hit_history[-1] == True:
+                    is_zero_fail = True
+                    logic_name = "ZERO FAIL (High Quality: Kal Pass Tha)"
+                    curr_f = 0
+                else:
+                    rle = []
+                    c_val = hit_history[0]
+                    c_count = 1
+                    for v in hit_history[1:]:
+                        if v == c_val: c_count += 1
+                        else:
+                            rle.append((c_val, c_count))
+                            c_val = v
+                            c_count = 1
+                    rle.append((c_val, c_count))
+                    
+                    curr_f = rle[-1][1] 
+                    
+                    # TRUE SEQUENCE DETECTOR (Aapka logic: 3-4 times repeat ho tabhi Sequence manenge)
+                    if len(rle) >= 5:
+                        # Check karega ki kya pichli 2 baar bhi same 'curr_f' jitne fail de kar paas hua tha?
+                        if rle[-3][0] == False and rle[-3][1] == curr_f and \
+                           rle[-5][0] == False and rle[-5][1] == curr_f:
+                            is_true_seq = True
+                            logic_name = f"TRUE SEQUENCE ({curr_f} Fail ka pattern 3+ baar verified)"
                             
-                final_cross_msg = " | ".join(cross_shift_msgs) if cross_shift_msgs else ""
-
-                jan_apr = sum(1 for i in range(1, len(hit_history)) if hit_history[i] and hit_history[i-1] and (1 <= d_list[i+15].month <= 4))
+                    if not is_zero_fail and not is_true_seq:
+                        logic_name = f"MASTER FALLBACK ({curr_f} Fail Se Hai)"
                 
+                jan_apr = sum(1 for i in range(1, len(hit_history)) if hit_history[i] and hit_history[i-1] and (1 <= d_list[i+15].month <= 4))
+                        
                 max_f = 0
                 c_f = 0
                 for h in hit_history:
@@ -192,30 +183,18 @@ if uploaded_file is not None:
                         c_f += 1
                         if c_f > max_f: max_f = c_f
                     else: c_f = 0
+                        
+                candidates.append({
+                    'tf': tf, 'logic': logic_name, 'score': jan_apr, 'max_f': max_f,
+                    'is_zero_fail': is_zero_fail, 'is_true_seq': is_true_seq, 'curr_f': curr_f
+                })
 
-                tf_data = {
-                    'tf': tf, 'score': jan_apr, 'max_f': max_f, 'curr_f': curr_f,
-                    'p_match': pattern_matches, 'p_succ': pattern_successes, 'p_acc': base_accuracy,
-                    'hit_dates': hit_dates, 'cross_msg': final_cross_msg
-                }
-
-                if curr_f == 0: zero_fail_candidates.append(tf_data)
-                elif curr_f == 1: one_fail_candidates.append(tf_data)
-                else: other_candidates.append(tf_data)
-
-            if zero_fail_candidates:
-                best = sorted(zero_fail_candidates, key=lambda x: (x['p_acc'], x['max_f'], -x['score']))[-1]
-                return best['tf'], "ZERO FAIL", 0, best['score'], best['max_f'], best['p_match'], best['p_succ'], best['p_acc'], best['hit_dates'], best['cross_msg']
-                
-            elif one_fail_candidates:
-                best = sorted(one_fail_candidates, key=lambda x: (x['p_acc'], x['max_f'], -x['score']))[-1]
-                return best['tf'], "ONE FAIL REBOUND", 1, best['score'], best['max_f'], best['p_match'], best['p_succ'], best['p_acc'], best['hit_dates'], best['cross_msg']
-                
-            elif other_candidates:
-                best = sorted(other_candidates, key=lambda x: (x['p_acc'], x['max_f'], -x['score']))[-1]
-                return best['tf'], f"GEAR SHIFT ({best['curr_f']} Fail)", best['curr_f'], best['score'], best['max_f'], best['p_match'], best['p_succ'], best['p_acc'], best['hit_dates'], best['cross_msg']
-                
-            return 15, "DEFAULT FALLBACK", 0, 0, 99, 0, 0, 0, [], ""
+            if candidates:
+                # 🏆 THE PERFECT SORTING RULE: Zero-Fail First -> True Sequence Second -> Lowest Max Fail Third!
+                best = sorted(candidates, key=lambda x: (not x['is_zero_fail'], not x['is_true_seq'], x['max_f'], -x['score']))[0]
+                return best['tf'], best['logic'], best['curr_f'], best['score'], best['max_f'], best['is_zero_fail'], best['is_true_seq']
+            else:
+                return 15, "DEFAULT FALLBACK", 0, 0, 99, False, False
 
         def render_ank(nums, traps, black_boxes):
             nums = list(set(nums)); nums.sort()
@@ -232,24 +211,20 @@ if uploaded_file is not None:
             html += "</div>"
             return html
 
-        # --- PROCESS IN CHRONOLOGICAL ORDER ---
-        prev_shift_decisions = []
-        
         for shift in shift_order:
             if shift not in df.columns: continue
             
             st.markdown("---")
             
             if shift not in st.session_state.results_cache:
-                with st.spinner(f"Searching {shift}... Peeche ki saari shifts se data link ho raha hai!"):
+                with st.spinner(f"Searching {shift}... Fixing sorting priorities (Zero-Fail First)!"):
                     s_data = filtered_df[['DATE', shift]].dropna()
                     hist = s_data[shift].astype(int).tolist()
                     d_list = s_data['DATE'].tolist()
                     
                     if len(hist) < 60: continue
                     
-                    # AI ko 'prev_shift_decisions' list di gayi, jismein ab tak hui saari shifts ka data hai!
-                    res_vals = get_unified_best_timeframe(tuple(hist), tuple(d_list), prev_shift_decisions)
+                    res_vals = get_unified_best_timeframe(tuple(hist), tuple(d_list))
                     tf_final = res_vals[0]
                     
                     tiers = get_all_tiers_cached(tuple(hist))
@@ -263,42 +238,33 @@ if uploaded_file is not None:
                         if count >= 2: traps.add(n)
                         
                     doomed_black_boxes = get_doomed_timeframe_predictions(tuple(hist))
+                    
                     pure_green_nums = [n for n in tiers[tier_best] if n not in traps and n not in doomed_black_boxes]
                     
                     st.session_state.results_cache[shift] = {
                         'logic': res_vals[1], 'tf': tf_final, 'curr_f': res_vals[2], 
-                        'score': res_vals[3], 'max_f': res_vals[4], 
-                        'p_match': res_vals[5], 'p_succ': res_vals[6], 'p_acc': res_vals[7],
-                        'hit_dates': res_vals[8], 'cross_msg': res_vals[9],
+                        'score': res_vals[3], 'max_f': res_vals[4], 'is_zero_fail': res_vals[5], 'is_true_seq': res_vals[6],
                         'tier': tier_best, 'traps': list(traps), 'black_boxes': doomed_black_boxes, 'raw_tier_nums': tiers[tier_best],
                         'pure_green': pure_green_nums
                     }
 
             res = st.session_state.results_cache[shift]
             
-            # 🚀 AGLE SHIFT KE LIYE IS SHIFT KA DATA SAVE KARO
-            prev_shift_decisions.append({
-                'shift': shift,
-                'tf': res['tf'],
-                'hit_dates': res['hit_dates']
-            })
-            
             dates_today = filtered_df[filtered_df[shift].notna()]['DATE'].tolist()
             date_kal = dates_today[-1].strftime('%d %b %Y') if len(dates_today) > 0 else ""
-            date_parso = dates_today[-2].strftime('%d %b %Y') if len(dates_today) > 1 else ""
             date_start_fail = dates_today[-1 - res['curr_f']].strftime('%d %b %Y') if len(dates_today) > res['curr_f'] else ""
             
             st.subheader(f"🧩 Shift: {shift}")
             
-            if res['curr_f'] == 0:
+            if res['is_zero_fail']:
                 banner_bg = "#28a745"; border_c = "#1e7e34"; text_col = "white"
-                banner_text = f"✅ <b>ZERO FAIL:</b> Pichla din (<b>{date_kal}</b>) PAAS tha.<br><i>History: <b>{res['p_succ']}/{res['p_match']}</b> baar PAAS hua! (<b>{res['p_acc']:.1f}% Accuracy</b>)</i>"
-            elif res['curr_f'] == 1:
+                banner_text = f"✅ <b>ZERO FAIL (High Quality):</b> Pichla din (<b>{date_kal}</b>) PAAS tha! Priority 1 Timeframe applied."
+            elif res['is_true_seq']:
                 banner_bg = "#ffc107"; border_c = "#d39e00"; text_col = "black"
-                banner_text = f"⚠️ <b>1-FAIL REBOUND:</b> <b>{date_parso}</b> ko Pass tha, kal Fail hua.<br><i>History: <b>{res['p_succ']}/{res['p_match']}</b> baar rebound PAAS hua! (<b>{res['p_acc']:.1f}% Accuracy</b>)</i>"
+                banner_text = f"🔥 <b>TRUE SEQUENCE MATCHER:</b> <b>{date_start_fail}</b> se fail chal raha hai. History mein exactly <b>{res['curr_f']} Fail</b> ke baad pass hota aaya hai!"
             else:
                 banner_bg = "#FF4B4B"; border_c = "#c82333"; text_col = "white"
-                banner_text = f"🔥 <b>GEAR SHIFT ({res['curr_f']} Fail):</b> <b>{date_start_fail}</b> se fail hai.<br><i>History: <b>{res['p_succ']}/{res['p_match']}</b> baar rebound PAAS hua! (<b>{res['p_acc']:.1f}% Accuracy</b>)</i>"
+                banner_text = f"⚠️ <b>MASTER FALLBACK:</b> 0-Fail ya Sequence nahi mila. Sabse kam Max-Fail ({res['max_f']} din) wala chuna gaya."
 
             st.markdown(f"<div style='background:{banner_bg}; padding:10px; border-radius:8px; border: 2px solid {border_c}; text-align:center; color:{text_col}; margin-bottom:10px;'>{banner_text}</div>", unsafe_allow_html=True)
 
@@ -320,8 +286,8 @@ if uploaded_file is not None:
                 bg_col = "#00FF7F15"
                 st.markdown(f"<div style='border:2px solid {border_col}; padding:10px; border-radius:8px; background:{bg_col}; font-size:14px;'>"
                             f"<b>Logic:</b> {res['logic']} | <b>Selected Gear:</b> <code>{res['tf']}-Din TF</code><br>"
-                            f"<i>🔗 <b>Cross-Shift Links:</b> {res['cross_msg'] if res['cross_msg'] else 'Fresh Sequence (Independent)'}</i><br>"
-                            f"<i>🔥 <b>MIN MAX-FAIL:</b> History ka sabse lamba fail <b>{res['max_f']} din</b> gaya hai!</i><br>"
+                            f"<i>❄️ Jan-Apr Score: <b>{res['score']} baar</b> direct paas.<br>"
+                            f"🔥 <b>MIN MAX-FAIL:</b> History ka sabse lamba fail <b>{res['max_f']} din</b> gaya hai!</i><br>"
                             f"<hr style='margin:5px 0; border-top:1px solid #444;'>"
                             f"✅ <b>HARA (Play):</b> {len(res['pure_green'])} Nums | ⬛ <b>KAALA (Doomed):</b> {len([n for n in res['raw_tier_nums'] if n in res['black_boxes']])} Nums"
                             f"</div>", unsafe_allow_html=True)
@@ -330,4 +296,4 @@ if uploaded_file is not None:
 
     except Exception as e:
         st.error(f"Error: {e}")
-                    
+            
