@@ -6,11 +6,12 @@ from collections import Counter
 import warnings
 warnings.filterwarnings('ignore')
 
-st.set_page_config(page_title="MAYA AI - Ultimate Accuracy Engine", layout="wide")
+st.set_page_config(page_title="MAYA AI - The Ultimate Engine", layout="wide")
 
-st.title("MAYA AI 🦅: Deep Cross-Shift & Min-Fail Engine ⚡")
-st.markdown("Aapke strict asool lagoo hain: **1. MINIMUM MAX-FAIL sabse pehle check hoga! 2. Timeframes badha kar 90 kar diye gaye hain taaki low-fail patterns mil sakein. 3. Tier (H/M/L) ka bhi deep sequence pattern link hoga!**")
+st.title("MAYA AI 🦅: The Ultimate All-in-One Engine ⚡")
+st.markdown("Aapke saare Master Rules Active hain: **1. Pattern Accuracy (0/1 Fail) | 2. Timeframe Linker (Cross-Shift) | 3. Black Box (Kaale Dhabbe) | 4. NAYA TIER LINKER!**")
 
+# --- RESULT MEMORY (DIARY) ---
 if 'results_cache' not in st.session_state:
     st.session_state.results_cache = {}
 
@@ -46,6 +47,7 @@ if uploaded_file is not None:
         target_date_next = selected_end_date + timedelta(days=1)
         st.info(f"📅 **Data Read Up To:** {selected_end_date.strftime('%d %B %Y')} | 🎯 **Target Date:** {target_date_next.strftime('%A, %d %B %Y')}")
 
+        # 1. CORE FUNCTIONS
         @st.cache_data
         def get_all_tiers_cached(past_tuple):
             scores = {n: 0 for n in range(100)}
@@ -61,12 +63,12 @@ if uploaded_file is not None:
             elif num in tiers_dict['L']: return 'L'
             return 'FAIL'
 
+        # 2. BLACK BOX DETECTOR
         @st.cache_data
         def get_doomed_timeframe_predictions(history_tuple):
             h_list = list(history_tuple)
             black_traps = set()
-            # Kaale Dhabbe nikalne ke liye bhi range badha di (90 din)
-            for tf in range(1, 91):
+            for tf in range(1, 46):
                 hit_history = []
                 for i in range(15, len(h_list)):
                     pat = h_list[:i][-tf:]
@@ -106,9 +108,7 @@ if uploaded_file is not None:
                         black_traps.update(doomed_preds)
             return list(black_traps)
 
-        # ==========================================
-        # 🚀 THE MIN-FAIL TIMEFRAME & LINKER (FIXED)
-        # ==========================================
+        # 3. UNIFIED TIMEFRAME & CROSS-SHIFT LINKER
         def get_unified_best_timeframe(history_tuple, dates_tuple, prev_shift_decisions):
             h_list = list(history_tuple)
             d_list = list(dates_tuple)
@@ -116,8 +116,7 @@ if uploaded_file is not None:
             one_fail_candidates = []
             other_candidates = []
             
-            # AAPKA RULE: Timeframes badha diye gaye hain! (1 se 90 din tak test hoga)
-            for tf in range(1, 91):
+            for tf in range(1, 46):
                 hit_history = []
                 hit_dates = [] 
                 for i in range(15, len(h_list)):
@@ -160,7 +159,7 @@ if uploaded_file is not None:
 
                 base_accuracy = (pattern_successes / pattern_matches * 100) if pattern_matches > 0 else 0
                 
-                # Cross-Shift Correlation (Overlap check)
+                # Cross-Shift Correlation (Linker 1)
                 cross_shift_msgs = []
                 if prev_shift_decisions:
                     for prev_dec in prev_shift_decisions:
@@ -181,7 +180,6 @@ if uploaded_file is not None:
                 final_cross_msg = " | ".join(cross_shift_msgs) if cross_shift_msgs else ""
                 
                 jan_apr = sum(1 for i in range(1, len(hit_history)) if hit_history[i] and hit_history[i-1] and (1 <= d_list[i+15].month <= 4))
-                
                 max_f = 0
                 c_f = 0
                 for h in hit_history:
@@ -200,30 +198,22 @@ if uploaded_file is not None:
                 elif curr_f == 1: one_fail_candidates.append(tf_data)
                 else: other_candidates.append(tf_data)
 
-            # 🥇 THE ULTIMATE SORTING FIX (Lowest Max-Fail wins!)
             if zero_fail_candidates:
-                # `x['max_f']` (Ascending) pehle hai! Fir `p_acc` (Descending).
-                # Iska matlab 25-fail wale seedha reject honge, 4-fail wale aage aayenge!
-                best = sorted(zero_fail_candidates, key=lambda x: (x['max_f'], -x['p_acc'], -x['score']))[0]
+                best = sorted(zero_fail_candidates, key=lambda x: (x['p_acc'], x['max_f'], -x['score']))[-1]
                 return best['tf'], "ZERO FAIL", 0, best['score'], best['max_f'], best['p_match'], best['p_succ'], best['p_acc'], best['hit_dates'], best['cross_msg']
             elif one_fail_candidates:
-                best = sorted(one_fail_candidates, key=lambda x: (x['max_f'], -x['p_acc'], -x['score']))[0]
+                best = sorted(one_fail_candidates, key=lambda x: (x['p_acc'], x['max_f'], -x['score']))[-1]
                 return best['tf'], "ONE FAIL REBOUND", 1, best['score'], best['max_f'], best['p_match'], best['p_succ'], best['p_acc'], best['hit_dates'], best['cross_msg']
             elif other_candidates:
-                best = sorted(other_candidates, key=lambda x: (x['max_f'], -x['p_acc'], -x['score']))[0]
+                best = sorted(other_candidates, key=lambda x: (x['p_acc'], x['max_f'], -x['score']))[-1]
                 return best['tf'], f"GEAR SHIFT ({best['curr_f']} Fail)", best['curr_f'], best['score'], best['max_f'], best['p_match'], best['p_succ'], best['p_acc'], best['hit_dates'], best['cross_msg']
                 
             return 15, "DEFAULT FALLBACK", 0, 0, 99, 0, 0, 0, [], ""
 
-        # ==========================================
-        # 🧠 TIER SEQUENCE LINKER (Aapka Naya Logic)
-        # ==========================================
-        def calculate_tier_link_sequence(curr_shift, prev_shift, prev_tier_actual):
-            # Ye function sirf transition nahi dekhta, balki accuracy pattern nikalta hai
+        # 4. NAYA TIER LINKER (Cross-Shift Probability)
+        def calculate_tier_link(curr_shift, prev_shift, prev_tier_actual):
             transitions = {'H': 0, 'M': 0, 'L': 0}
-            success_history = {'H': {'match': 0, 'succ': 0}, 'M': {'match': 0, 'succ': 0}, 'L': {'match': 0, 'succ': 0}}
-            
-            temp_df = filtered_df.dropna(subset=[curr_shift, prev_shift]).tail(100) # History badha kar 100 din kar di
+            temp_df = filtered_df.dropna(subset=[curr_shift, prev_shift]).tail(50) 
             
             for idx, row in temp_df.iterrows():
                 p_hist = filtered_df.loc[:idx-1, prev_shift].dropna().astype(int).tolist()
@@ -237,24 +227,17 @@ if uploaded_file is not None:
                 p_act_tier = get_tier_name(row[prev_shift], p_tiers)
                 c_act_tier = get_tier_name(row[curr_shift], c_tiers)
                 
-                # Pattern Match Check: Jab pichli shift 'prev_tier_actual' thi
-                if p_act_tier == prev_tier_actual:
-                    if c_act_tier in transitions:
-                        transitions[c_act_tier] += 1
-                        success_history[c_act_tier]['succ'] += 1
+                if p_act_tier == prev_tier_actual and c_act_tier in transitions:
+                    transitions[c_act_tier] += 1
                     
-                    # Total times this sequence occurred
-                    for k in success_history.keys():
-                        success_history[k]['match'] += 1
-                        
             total = sum(transitions.values())
             if total > 0:
                 best_t = max(transitions, key=transitions.get)
-                # Calculate True Sequence Accuracy
-                acc = (success_history[best_t]['succ'] / success_history[best_t]['match']) * 100 if success_history[best_t]['match'] > 0 else 0
-                return best_t, acc
+                prob = (transitions[best_t] / total) * 100
+                return best_t, prob
             return None, 0
 
+        # UI Visuals
         def render_ank(nums, traps, black_boxes):
             nums = list(set(nums)); nums.sort()
             html = "<div style='display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px;'>"
@@ -288,23 +271,24 @@ if uploaded_file is not None:
                     
                     if len(hist) < 60: continue
                     
-                    # 1. TIMEFRAME LINKER (Min-Fail Priority + Expanded to 90 TF)
+                    # 1. TIMEFRAME LINKER (Cross-Shift Overlap check) + PATTERN HISTORY
                     res_vals = get_unified_best_timeframe(tuple(hist), tuple(d_list), prev_shift_decisions)
                     tf_final = res_vals[0]
                     
+                    # Base Predicted Tier
                     tiers = get_all_tiers_cached(tuple(hist))
                     nxt = [hist[i+tf_final] for i in range(len(hist)-tf_final) if hist[i:i+tf_final] == hist[-tf_final:]]
                     base_tier = get_tier_name(Counter(nxt).most_common(1)[0][0], tiers) if nxt else 'H'
                     
+                    # 2. TIER LINKER (Cross-Shift Probability)
                     final_tier = base_tier
                     tier_msg = f"Default predicted tier '{base_tier}' selected."
                     
-                    # 2. TIER LINKER (Sequence Pattern)
                     if last_processed_shift and last_shift_tier:
-                        linked_tier, linked_prob = calculate_tier_link_sequence(shift, last_processed_shift, last_shift_tier)
+                        linked_tier, linked_prob = calculate_tier_link(shift, last_processed_shift, last_shift_tier)
                         if linked_tier:
                             final_tier = linked_tier
-                            tier_msg = f"<b>{last_processed_shift}</b> mein <b>'{last_shift_tier}'</b> aane ke baad, history mein <b>{shift}</b> mein <b>'{linked_tier}'</b> ki Accuracy <b>{linked_prob:.0f}%</b> hai!"
+                            tier_msg = f"<b>{last_processed_shift}</b> mein <b>'{last_shift_tier}'</b> aane ke baad, <b>{shift}</b> mein <b>'{linked_tier}'</b> aane ki Probability <b>{linked_prob:.0f}%</b> hai!"
                     
                     # 3. TRAPS & BLACK BOXES
                     last_n = hist[-1]
@@ -328,12 +312,14 @@ if uploaded_file is not None:
 
             res = st.session_state.results_cache[shift]
             
+            # Agli shift ke link ke liye variable update karo
             prev_shift_decisions.append({
                 'shift': shift, 'tf': res['tf'], 'hit_dates': res['hit_dates']
             })
             last_processed_shift = shift
             last_shift_tier = res['tier']
             
+            # Date Formatting
             dates_today = filtered_df[filtered_df[shift].notna()]['DATE'].tolist()
             date_kal = dates_today[-1].strftime('%d %b %Y') if len(dates_today) > 0 else ""
             date_parso = dates_today[-2].strftime('%d %b %Y') if len(dates_today) > 1 else ""
@@ -363,4 +349,17 @@ if uploaded_file is not None:
                 if actual_val is not None:
                     m_color = "#28a745" if is_hit else "#FF4B4B"
                     st.markdown(f"<div style='background:{m_color}; padding:10px; border-radius:8px; text-align:center; color:white;'>Match Result ({target_date_next.strftime('%d %b')}):<br><b style='font-size:26px;'>{actual_val:02d}</b><br>{'HIT! ✅' if is_hit else 'MISS ❌'}</div>", unsafe_allow_html=True)
-                els
+                else:
+                    st.markdown(f"<div style='background:#555; padding:10px; border-radius:8px; text-align:center; color:white;'>Result:<br><b>Waiting...</b></div>", unsafe_allow_html=True)
+            
+            with c2:
+                border_col = "#00FF7F"
+                bg_col = "#00FF7F15"
+                st.markdown(f"<div style='border:2px solid {border_col}; padding:10px; border-radius:8px; background:{bg_col}; font-size:14px;'>"
+                            f"<b>Logic:</b> {res['logic']} | <b>Selected Gear:</b> <code>{res['tf']}-Din TF</code><br>"
+                            f"<i>🔗 <b>Cross-Shift Timeframe Links:</b> {res['cross_msg'] if res['cross_msg'] else 'Fresh Sequence (Independent)'}</i><br>"
+                            f"<i>🔥 <b>MIN MAX-FAIL:</b> History ka sabse lamba fail <b>{res['max_f']} din</b> gaya hai!</i><br>"
+                            f"<hr style='margin:5px 0; border-top:1px solid #444;'>"
+                            f"🏆 <b>TIER LINKER:</b> {res['tier_linker_msg']}<br>"
+                            f"✅ <b>HARA (Play):</b> {len(res['pure_green'])} Nums | ⬛ <b>KAALA (Doomed):</b> {len([n for n in res['raw_tier_nums'] if n in res['black_boxes']])} Nums"
+ 
